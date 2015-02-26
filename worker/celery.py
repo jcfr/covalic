@@ -13,4 +13,4 @@ config.read([os.path.join(os.path.dirname(os.path.dirname(__file__)), f)
 app = celery.Celery(
     main=config.get('celery', 'app_main'),
     broker=config.get('celery', 'broker'),
-    include=('worker.score',))
+    include=('worker.score', 'worker.docker_task'))

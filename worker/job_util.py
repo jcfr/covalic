@@ -176,6 +176,24 @@ class task(object):
         else:
             kwargs['_tmpDir'] = None
 
+    def _pullDockerImages(self, kwargs):
+        """
+        If a docker_images key exists in the kwargs to the task, we will pull
+        all of the images prior to executing the task.
+        """
+        if 'docker_images' in kwargs:
+            if isinstance(kwargs['docker_images'], basestring):
+                images = (kwargs['docker_images'],)
+            else:
+                images = kwargs['docker_images']
+
+            for image in images:
+                if self.progress:
+                    jobMgr.updateProgress(
+                        total=-1, message='Pulling docker image %s.' % image,
+                        forceFlush=True)
+                utils.pullDockerImage(image)
+
     def __call__(self, fn):
         @functools.wraps(fn)
         def wrapped(task, *args, **kwargs):
@@ -188,6 +206,7 @@ class task(object):
 
                 try:
                     self._makeTmpDir(task.request.id, kwargs)
+                    self._pullDockerImages(kwargs)
 
                     if self.progress:
                         jobMgr.updateProgress(

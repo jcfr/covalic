@@ -2,6 +2,7 @@ import os
 import re
 import requests
 import shutil
+import subprocess
 import zipfile
 
 
@@ -17,6 +18,24 @@ def _readFilenameFromResponse(request):
         return [t for t in request.url.split('/') if t][-1]
     else:
         return match.group(1)
+
+
+def pullDockerImage(image):
+    """
+    Pulls the docker image to the local system by calling "docker pull <image>".
+    If the pull fails, this raises an exception.
+    """
+    command = ('docker', 'pull', image)
+    p = subprocess.Popen(args=command, stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE)
+    stdout, stderr = p.communicate()
+
+    if p.returncode != 0:
+        print('Error pulling docker image %s:' % image)
+        print('STDOUT: ' + stdout)
+        print('STDERR: ' + stderr)
+
+        raise Exception('Docker pull returned code {}'.format(p.returncode))
 
 
 def fetchHttpInput(tmpDir, spec):
