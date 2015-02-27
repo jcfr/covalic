@@ -74,7 +74,9 @@ def fetchHttpInput(tmpDir, spec):
 def fetchInputs(tmpDir, inputList):
     """
     Fetch all inputs. For each input, writes a '_localPath' key into the
-    input spec that denotes where the file was written on the local disk.
+    input spec that denotes where the file was written on the local disk. If
+    you run a processing step on the file that transforms it into another file
+    or directory, this will return the result of any processing steps.
     """
     localFiles = {}
 
@@ -85,6 +87,21 @@ def fetchInputs(tmpDir, inputList):
             localFiles[label] = fetchHttpInput(tmpDir, input)
         else:
             raise Exception('Invalid input type: ' + inputType)
+
+        processSteps = input.get('process', ())
+
+        for step in processSteps:
+            action = step.get('action')
+            args = step.get('args', ())
+            kwargs = step.get('kwargs', {})
+
+            if step.get('action') == 'unzip':
+                kwargs['path'] = localFiles[label]
+                kwargs['dest'] = os.path.join(tmpDir, label)
+                extractZip(*args, **kwargs)
+                localFiles[label] = kwargs['dest']
+            else:
+                raise Exception('Invalid processing action: %s.' % action)
 
     return localFiles
 

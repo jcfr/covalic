@@ -128,14 +128,22 @@ class Submission(Resource):
                     'method': 'GET',
                     'url': '/'.join((
                         apiUrl, 'folder', str(folder['_id']), 'download')),
-                    'headers': {'Girder-Token': celeryToken['_id']}
+                    'headers': {'Girder-Token': celeryToken['_id']},
+                    'process': [{
+                        'action': 'unzip',
+                        'kwargs': {'flatten': True}
+                    }]
                 },
                 'ground_truth': {
                     'type': 'http',
                     'method': 'GET',
                     'url': '/'.join((
                         apiUrl, 'folder', str(groundTruth['_id']), 'download')),
-                    'headers': {'Girder-Token': celeryToken['_id']}
+                    'headers': {'Girder-Token': celeryToken['_id']},
+                    'process': [{
+                        'action': 'unzip',
+                        'kwargs': {'flatten': True}
+                    }]
                 }
             },
             'jobUpdate': {

@@ -68,39 +68,33 @@ def runScoring(truth, test, tmpDir):
 @app.task(name='covalic_score', bind=True)
 @job_util.task(logPrint=True, progress=True)
 def covalic_score(*args, **kwargs):
-    localDirs = {}
     jobMgr = kwargs['_jobManager']
-
-    # Unzip the input files since they are folders
-    for label, path in kwargs['_localInput'].iteritems():
-        output = os.path.join(kwargs['_tmpDir'], label)
-        utils.extractZip(path, output, flatten=True)
-        localDirs[label] = output
+    gtDir = kwargs['_localInput']['ground_truth']
 
     # Count the total number of files for progress reporting
-    total = len(os.listdir(localDirs['ground_truth']))
+    total = len(os.listdir(gtDir))
     current = 0
 
     jobMgr.updateProgress(total=total, current=current)
 
     # Iterate over each file and call scoring executable on the pair
     scores = []
-    for gt in os.listdir(localDirs['ground_truth']):
-        current += 1
-
-        prefix, input = matchInputFile(gt, localDirs['submission'])
-        truth = os.path.join(localDirs['ground_truth'], gt)
+    for gt in os.listdir(gtDir):
+        prefix, input = matchInputFile(gt, kwargs['_localInput']['submission'])
+        truth = os.path.join(gtDir, gt)
 
         jobMgr.updateProgress(
             current=current, message='Scoring dataset %d of %d'
-            % (current, total), forceFlush=(current == 1))
+            % (current + 1, total), forceFlush=(current == 0))
 
         scores.append({
             'dataset': gt,
             'metrics': runScoring(truth, input, kwargs['_tmpDir'])
         })
 
-    jobMgr.updateProgress(message='Sending scores to server')
+        current += 1
+
+    jobMgr.updateProgress(current=total, message='Sending scores to server')
 
     scoreTarget = kwargs['scoreTarget']
     httpMethod = getattr(requests, scoreTarget['method'].lower())
